@@ -1,7 +1,7 @@
 {
-  "name": "My Enhanced Local Vault",
-  "short_name": "Local Vault",
-  "description": "A simple, local password vault application.",
+  "name": "Vault",
+  "short_name": "Vault",
+  "description": "A simple,vault application.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#eef4f8",
@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icons/icon-192x192.png",  /* <<< REPLACE WITH YOUR ICON PATH */
+      "src": "icons/icon1.png",  
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512x512.png",  /* <<< REPLACE WITH YOUR ICON PATH */
+      "src": "icons/icon2.png", 
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
