@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/api/helpers.php'; // To get DB connection
+require_once(__DIR__ . '/helpers.php'); // To get DB connection
 
 // --- !!! RUN THIS SCRIPT ONLY ONCE !!! ---
 // --- !!! DELETE OR SECURE IT AFTERWARDS !!! ---
