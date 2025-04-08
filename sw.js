@@ -1,14 +1,14 @@
 // sw.js - Service Worker for Caching
 
-const CACHE_NAME = 'v1'; // Change version if you update assets
+const CACHE_NAME = 'v2'; // Change version if you update assets
 
 // IMPORTANT: List all files that make up your app's shell
 const CORE_ASSETS = [
   '.', // Represents index.html (or the start_url)
   'manifest.json',
   // Add paths to your actual icon files here:
-  'icons/icon-192x192.png', /* <<< REPLACE */
-  'icons/icon-512x512.png', /* <<< REPLACE */
+  'icons/icon1.png', /* <<< REPLACE */
+  'icons/icon2.png', /* <<< REPLACE */
   // External resources (needed even for embedded CSS/JS if they load external things)
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap',
