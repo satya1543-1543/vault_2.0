@@ -1,4 +1,4 @@
-// sw.js - Service Worker for Caching
+// sw.js - Service Worker
 
 const CACHE_NAME = 'v3'; // <<< INCREMENTED version number
 const API_BASE_URL = '/api'; // Define your API base path
