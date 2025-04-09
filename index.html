@@ -15,6 +15,8 @@
 
     <!-- Add to home screen for Safari on iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Add to home screen for Android/Chrome (Fix for deprecation warning) -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Local Vault">
     <!-- Optional: Add Apple touch icons if needed -->
@@ -1604,7 +1606,10 @@
                 }, duration);
             }
 
-        }); // End DOMContentLoaded
+        }); // End DOMContentLoaded callback function
+    ); // *** THIS IS THE CORRECTED LINE: Added missing closing parenthesis for addEventListener ***
+
+    // --- End Embedded JavaScript ---
     </script>
 
 </body>
