@@ -1030,8 +1030,8 @@
                     if (response.ok) {
                         // Already authenticated
                         hideLoginScreen();
-                        vaultContainer.style.display = 'block'; // <<< FIX APPLIED HERE
-                        initializeVault(); // This will fetch passwords for the now-visible vault
+                        vaultContainer.style.display = 'block'; // Make vault visible
+                        initializeVault(); // Fetch passwords for the now-visible vault
                     } else if (response.status === 401) {
                         // Not authenticated, show login screen
                         showLoginScreen();
@@ -1570,14 +1570,15 @@
                  }
             }
 
+            // *** CORRECTED escapeHtml function ***
             function escapeHtml(unsafe) {
                 const str = String(unsafe || ''); // Ensure input is a string
                 return str
-                     .replace(/&/g, "&") // Corrected escape for ampersand
-                     .replace(/</g, "<")  // Corrected escape for less than
-                     .replace(/>/g, ">")  // Corrected escape for greater than
-                     .replace(/"/g, """) // Corrected escape for double quote
-                     .replace(/'/g, "'"); // Corrected escape for single quote (or ')
+                     .replace(/&/g, "&")   // Use & for ampersand
+                     .replace(/</g, "<")    // Use < for less than
+                     .replace(/>/g, ">")    // Use > for greater than
+                     .replace(/"/g, """)  // Use " for double quote
+                     .replace(/'/g, "'"); // Use ' for single quote (safer than ')
              }
 
              // Utility to disable/enable form inputs and button
