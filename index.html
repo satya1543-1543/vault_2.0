@@ -964,36 +964,60 @@
 
     <script>
         // --- Start Embedded JavaScript ---
-        // This script now interacts with a backend API (PHP in this case)
-        // It does NOT use localStorage for PIN or vault data.
+        console.log('>>> Script execution started.'); // Log script start
 
         // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
+          console.log('>>> Service Worker API available.');
           window.addEventListener('load', () => {
+            console.log('>>> Window loaded, attempting SW registration...');
             navigator.serviceWorker.register('/sw.js') // Use absolute path from the root
               .then(registration => {
-                console.log('Service Worker registered successfully with scope:', registration.scope);
+                console.log('>>> Service Worker registered successfully with scope:', registration.scope);
+                // Log state changes of the SW
+                if (registration.installing) {
+                    console.log('>>> SW State: Installing', registration.installing);
+                } else if (registration.waiting) {
+                    console.log('>>> SW State: Waiting', registration.waiting);
+                } else if (registration.active) {
+                    console.log('>>> SW State: Active', registration.active);
+                }
+                // Listen for updates
+                registration.addEventListener('updatefound', () => {
+                    console.log('>>> SW Update Found!');
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                         console.log('>>> SW New Worker State:', newWorker.state);
+                    });
+                });
               })
               .catch(error => {
-                console.error('Service Worker registration failed:', error);
+                console.error('>>> Service Worker registration failed:', error);
               });
           });
+           // Log controller changes
+           navigator.serviceWorker.addEventListener('controllerchange', () => {
+               console.log('>>> SW Controller Changed!');
+           });
+        } else {
+            console.log('>>> Service Worker API not available.');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('>>> DOMContentLoaded event fired.'); // Log DOM ready
 
             // --- Constants ---
             const MASKED_PASSWORD_CHAR = '••••••••';
-            // IMPORTANT: Adjust this if your PHP API files are in a different location relative to index.html
             const API_BASE_URL = '/api';
+            console.log('>>> Constants defined.');
 
             // --- DOM Elements ---
             const loginScreen = document.getElementById('login-screen');
             const pinSetupSection = document.getElementById('pin-setup-section');
             const pinEntrySection = document.getElementById('pin-entry-section');
             const pinSetupForm = document.getElementById('pin-setup-form');
-            const newPinInput = document.getElementById('new-pin'); // Kept for UI, but disabled
-            const confirmPinInput = document.getElementById('confirm-pin'); // Kept for UI, but disabled
+            const newPinInput = document.getElementById('new-pin');
+            const confirmPinInput = document.getElementById('confirm-pin');
             const setupErrorMessage = document.getElementById('setup-error-message');
             const pinContainer = document.getElementById('pin-container');
             const pinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit'));
@@ -1007,96 +1031,115 @@
             const togglePasswordButton = document.querySelector('.toggle-visibility');
             const searchInput = document.getElementById('search-input');
             const exportButton = document.getElementById('export-button');
+            console.log('>>> DOM Elements selected.');
 
             // --- Initialization ---
+            console.log('>>> Calling checkAuthenticationStatus...');
             checkAuthenticationStatus(); // Check if already logged in via server session
 
             // --- Login Logic ---
 
             async function checkAuthenticationStatus() {
-                // Try fetching data that requires authentication.
-                // Success means session is valid, 401 means login needed.
+                console.log('>>> checkAuthenticationStatus: START');
                 try {
-                    // Use credentials option to send session cookies
+                    console.log(`>>> checkAuthenticationStatus: Fetching ${API_BASE_URL}/passwords.php...`);
                     const response = await fetch(`${API_BASE_URL}/passwords.php`, {credentials: 'include'});
+                    console.log(`>>> checkAuthenticationStatus: Fetch status: ${response.status}`);
                     if (response.ok) {
-                        // Already authenticated
+                        console.log('>>> checkAuthenticationStatus: Auth OK. Hiding login, initializing vault.');
                         hideLoginScreen();
                         initializeVault();
                     } else if (response.status === 401) {
-                        // Not authenticated, show login screen
+                        console.log('>>> checkAuthenticationStatus: Auth Failed (401). Showing login screen.');
                         showLoginScreen();
                     } else {
-                        // Other server error
-                        console.error("Error checking auth status:", response.status, await response.text());
+                        const errorText = await response.text();
+                        console.error(">>> checkAuthenticationStatus: Server error:", response.status, errorText);
                         showLoginScreenWithError(`Server error (${response.status}) checking login status.`);
                     }
                 } catch (error) {
-                    console.error("Network error checking auth status:", error);
+                    console.error(">>> checkAuthenticationStatus: Network error:", error);
                     showLoginScreenWithError("Network error. Cannot reach server.");
                 }
+                 console.log('>>> checkAuthenticationStatus: END');
             }
 
             function showLoginScreen() {
+                console.log('>>> showLoginScreen: START');
                 pinErrorMessage.textContent = ''; // Clear previous errors
                 pinInputs.forEach(input => input.value = ''); // Clear PIN inputs
                 loginScreen.classList.add('visible'); // Use class to control visibility
                 pinSetupSection.style.display = 'none';
                 pinEntrySection.style.display = 'block';
-                vaultContainer.style.display = 'none';
+                vaultContainer.style.display = 'none'; // Ensure vault is hidden
+                console.log('>>> showLoginScreen: Setting up PIN listeners.');
                 setupPinInputListeners();
                 // Small delay to ensure transition works and focus is set correctly
-                setTimeout(() => pinInputs[0]?.focus(), 50);
+                setTimeout(() => {
+                    console.log('>>> showLoginScreen: Focusing first PIN input.');
+                    pinInputs[0]?.focus();
+                }, 50);
+                console.log('>>> showLoginScreen: END - Login screen should be visible.');
             }
 
              function showLoginScreenWithError(message) {
+                console.log(`>>> showLoginScreenWithError: START with message: "${message}"`);
                 showLoginScreen();
                 pinErrorMessage.textContent = message;
+                console.log('>>> showLoginScreenWithError: END');
             }
 
             function hideLoginScreen() {
-                 loginScreen.classList.remove('visible'); // Hide login screen
-                 // Vault container display is handled after successful login/init
+                 console.log('>>> hideLoginScreen: START');
+                 loginScreen.classList.remove('visible');
+                 console.log('>>> hideLoginScreen: END - Login screen should be hidden.');
             }
 
             // PIN Setup Form Listener (Informational Only)
             pinSetupForm.addEventListener('submit', (e) => {
+                console.log('>>> PIN Setup Form submitted (informational only).');
                 e.preventDefault();
                 setupErrorMessage.textContent = "PIN setup must be done on the server using 'setup_pin.php' and then deleted.";
             });
 
 
             function setupPinInputListeners() {
+                console.log('>>> setupPinInputListeners: START');
                 pinInputs.forEach((input, index) => {
                     // Remove previous listeners to avoid duplicates if showLoginScreen is called multiple times
                     input.replaceWith(input.cloneNode(true));
                 });
                 // Re-select inputs after cloning
                 const newPinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit'));
+                console.log(`>>> setupPinInputListeners: Re-selected ${newPinInputs.length} PIN inputs.`);
                 newPinInputs.forEach((input, index) => {
                     input.addEventListener('input', () => handlePinInput(input, index, newPinInputs));
                     input.addEventListener('keydown', (e) => handlePinKeydown(e, index, newPinInputs));
                     input.addEventListener('focus', () => input.select());
                 });
-                 // Update the global reference if needed, or pass newPinInputs around
-                 // For simplicity, we'll pass it in handlers for now.
+                console.log('>>> setupPinInputListeners: END - Listeners attached.');
             }
 
             function handlePinInput(input, index, currentPinInputs) {
+                // console.log(`>>> handlePinInput: Input received for index ${index}`); // Can be noisy
                 const value = input.value;
                 pinErrorMessage.textContent = '';
 
                 if (value.length === 1 && /^\d$/.test(value) && index < currentPinInputs.length - 1) {
+                    // console.log(`>>> handlePinInput: Moving focus to index ${index + 1}`);
                     currentPinInputs[index + 1].focus();
                 }
 
                 if (currentPinInputs.every(inp => inp.value.length === 1 && /^\d$/.test(inp.value))) {
+                    console.log('>>> handlePinInput: All PIN digits entered, submitting.');
                     submitPinForLogin(currentPinInputs); // Pass current inputs
                 }
             }
 
             function handlePinKeydown(e, index, currentPinInputs) {
+                // console.log(`>>> handlePinKeydown: Key "${e.key}" pressed for index ${index}`); // Can be noisy
                 if (e.key === 'Backspace' && index > 0 && currentPinInputs[index].value === '') {
+                    // console.log(`>>> handlePinKeydown: Backspace moving focus to index ${index - 1}`);
                     currentPinInputs[index - 1].focus();
                 }
                 // Allow only digits, Backspace, Tab, Arrow keys, and Cmd/Ctrl shortcuts
@@ -1105,19 +1148,27 @@
                     e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Delete' &&
                     e.key !== 'Home' && e.key !== 'End')
                 {
+                    // console.log(`>>> handlePinKeydown: Preventing default for key "${e.key}"`);
                     e.preventDefault();
                 }
             }
 
             function getEnteredPin(currentPinInputs) {
-                return currentPinInputs.map(input => input.value).join('');
+                const pin = currentPinInputs.map(input => input.value).join('');
+                // console.log(`>>> getEnteredPin: Returning "${pin}"`);
+                return pin;
             }
 
             async function submitPinForLogin(currentPinInputs) {
+                console.log('>>> submitPinForLogin: START');
                 const enteredPin = getEnteredPin(currentPinInputs);
-                if (enteredPin.length !== 4) return;
+                if (enteredPin.length !== 4) {
+                    console.log('>>> submitPinForLogin: PIN length not 4, returning.');
+                    return;
+                }
 
                 pinErrorMessage.textContent = 'Checking PIN...';
+                console.log(`>>> submitPinForLogin: Fetching ${API_BASE_URL}/login.php...`);
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/login.php`, {
@@ -1126,27 +1177,30 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
-                        // Send session cookies automatically
                         credentials: 'include',
                         body: JSON.stringify({ pin: enteredPin })
                     });
+                    console.log(`>>> submitPinForLogin: Fetch status: ${response.status}`);
 
                     if (response.ok) {
-                        // Login successful
+                        console.log('>>> submitPinForLogin: Login successful. Hiding login, initializing vault.');
                         hideLoginScreen();
                         vaultContainer.style.display = 'block'; // Show vault now
                         initializeVault();
                     } else {
                         const data = await response.json().catch(() => ({}));
+                        console.log('>>> submitPinForLogin: Login failed.', data);
                         handleIncorrectPin(data.error || `Login failed (Status: ${response.status})`, currentPinInputs);
                     }
                 } catch (error) {
-                    console.error('Login network error:', error);
+                    console.error('>>> submitPinForLogin: Network error:', error);
                     handleIncorrectPin('Network error during login.', currentPinInputs);
                 }
+                 console.log('>>> submitPinForLogin: END');
             }
 
             function handleIncorrectPin(message = 'Incorrect PIN. Please try again.', currentPinInputs) {
+                console.log(`>>> handleIncorrectPin: START with message: "${message}"`);
                 pinErrorMessage.textContent = message;
                 pinContainer.classList.add('shake');
                 currentPinInputs.forEach(input => input.value = '');
@@ -1154,28 +1208,38 @@
 
                 setTimeout(() => {
                     pinContainer.classList.remove('shake');
+                    console.log('>>> handleIncorrectPin: Shake animation removed.');
                 }, 500);
+                 console.log('>>> handleIncorrectPin: END');
             }
 
             // --- Vault Logic (Initialized AFTER successful login) ---
             function initializeVault() {
-                // Add Vault Event Listeners (only once after unlock)
-                // Ensure listeners aren't added multiple times if initializeVault could be called again
-                if (vaultContainer.dataset.initialized) return;
+                console.log('>>> initializeVault: START');
+                if (vaultContainer.dataset.initialized) {
+                     console.log('>>> initializeVault: Already initialized, skipping.');
+                     return;
+                }
                 vaultContainer.dataset.initialized = 'true';
+                vaultContainer.style.display = 'block'; // Ensure vault is visible
+                console.log('>>> initializeVault: Vault container should be visible.');
 
+                console.log('>>> initializeVault: Adding event listeners...');
                 togglePasswordButton.addEventListener('click', handleTogglePasswordVisibility);
                 passwordForm.addEventListener('submit', handleAddPassword);
                 searchInput.addEventListener('input', handleSearch);
                 passwordList.addEventListener('click', handleListActions);
                 exportButton.addEventListener('click', handleExport);
+                console.log('>>> initializeVault: Event listeners added.');
 
-                // Initial fetch and render of passwords
+                console.log('>>> initializeVault: Fetching initial passwords...');
                 fetchAndRenderPasswords();
+                console.log('>>> initializeVault: END');
             }
 
             // --- Vault Event Handlers ---
             function handleTogglePasswordVisibility() {
+                console.log('>>> handleTogglePasswordVisibility: Clicked.');
                 const icon = togglePasswordButton.querySelector('i');
                 if (!icon) return;
                 const isPassword = passwordInput.type === 'password';
@@ -1186,6 +1250,7 @@
             }
 
             async function handleAddPassword(e) {
+                console.log('>>> handleAddPassword: START');
                 e.preventDefault();
                 const website = websiteInput.value.trim();
                 const username = usernameInput.value.trim();
@@ -1193,8 +1258,11 @@
 
                 if (!website || !username || !password) {
                     alert('Please fill in all fields.');
+                    console.log('>>> handleAddPassword: Form incomplete.');
                     return;
                 }
+                console.log(`>>> handleAddPassword: Adding entry for ${website}`);
+                console.log(`>>> handleAddPassword: Fetching POST ${API_BASE_URL}/passwords.php...`);
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/passwords.php`, {
@@ -1206,73 +1274,91 @@
                         credentials: 'include', // Send session cookie
                         body: JSON.stringify({ website, username, password })
                     });
+                    console.log(`>>> handleAddPassword: Fetch status: ${response.status}`);
 
                     if (response.ok) {
+                        console.log('>>> handleAddPassword: Add successful. Resetting form and refreshing list.');
                         passwordForm.reset();
                         resetPasswordVisibilityToggle();
                         fetchAndRenderPasswords(searchInput.value); // Re-fetch and render
                     } else {
                          const data = await response.json().catch(() => ({}));
+                         console.error('>>> handleAddPassword: Add failed.', data);
                          alert(`Error adding entry: ${data.error || response.statusText}`);
                          if (response.status === 401) {
+                             console.log('>>> handleAddPassword: Session expired (401).');
                              showLoginScreenWithError("Session expired. Please log in again.");
                          }
                     }
                 } catch (error) {
-                    console.error('Error adding password:', error);
+                    console.error('>>> handleAddPassword: Network error:', error);
                     alert('Network error while adding entry.');
                 }
+                 console.log('>>> handleAddPassword: END');
             }
 
             let allPasswordsCache = []; // Cache for client-side filtering
             function handleSearch(e) {
-                renderPasswordsFromCache(e.target.value);
+                const filter = e.target.value;
+                console.log(`>>> handleSearch: Filtering with "${filter}"`);
+                renderPasswordsFromCache(filter);
             }
 
             function handleListActions(e) {
+                // console.log('>>> handleListActions: Click detected within list.'); // Can be noisy
                 const target = e.target;
                 const listItem = target.closest('li[data-id]');
                 if (!listItem) return;
 
                 const entryId = listItem.dataset.id;
+                console.log(`>>> handleListActions: Action on list item ID: ${entryId}`);
                 const entry = allPasswordsCache.find(p => p.id == entryId);
 
                 if (!entry) {
-                    console.error("Could not find entry in cache for ID:", entryId);
+                    console.error(">>> handleListActions: Could not find entry in cache for ID:", entryId);
                     return;
                 }
 
                 const passwordValueSpan = target.closest('.password-value');
                 if (passwordValueSpan) {
+                    console.log('>>> handleListActions: Toggling password visibility.');
                     togglePasswordDisplay(passwordValueSpan, entry.password);
                     return;
                 }
 
                 const copyButton = target.closest('.button-57.btn-copy');
                 if (copyButton) {
+                    console.log('>>> handleListActions: Copy button clicked.');
                     copyPassword(copyButton, entry.password);
                     return;
                 }
 
                 const deleteButton = target.closest('.button-57.btn-delete');
                 if (deleteButton) {
+                    console.log('>>> handleListActions: Delete button clicked.');
                     if (confirm(`Are you sure you want to delete the entry for "${entry.website}"? This cannot be undone.`)) {
+                        console.log('>>> handleListActions: Deletion confirmed.');
                         deletePasswordEntry(entryId);
+                    } else {
+                         console.log('>>> handleListActions: Deletion cancelled.');
                     }
                     return;
                 }
             }
 
             async function handleExport() {
+                console.log('>>> handleExport: START');
                 try {
-                    // Fetch fresh data for export
-                    const passwordsToExport = await fetchPasswords();
+                    console.log('>>> handleExport: Fetching passwords for export...');
+                    const passwordsToExport = await fetchPasswords(); // Uses the same fetch function
 
                     if (passwordsToExport.length === 0) {
                         alert("There are no entries to export.");
+                        console.log('>>> handleExport: No entries to export.');
                         return;
                     }
 
+                    console.log(`>>> handleExport: Found ${passwordsToExport.length} entries.`);
                     alert("Warning: You are about to export your stored entries.\nThe downloaded file will contain your passwords in PLAIN TEXT and is NOT encrypted.\nPlease store this file securely and delete it when no longer needed.");
 
                     const jsonData = JSON.stringify(passwordsToExport, null, 2);
@@ -1286,54 +1372,68 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
+                    console.log('>>> handleExport: Export file generated and download triggered.');
 
                 } catch (error) {
-                     console.error("Error during export:", error);
+                     console.error(">>> handleExport: Error during export:", error);
                      alert(`An error occurred while trying to fetch data for export: ${error.message || 'Unknown error'}`);
                      // Check if it was an auth error during fetchPasswords
                      if (error.message.includes("Session expired")) {
+                         console.log('>>> handleExport: Session expired during fetch.');
                          showLoginScreenWithError("Session expired. Please log in again to export.");
                      }
                 }
+                 console.log('>>> handleExport: END');
             }
 
 
             // --- Vault Core Functions ---
 
             async function fetchPasswords() {
+                console.log('>>> fetchPasswords: START');
                 try {
+                    console.log(`>>> fetchPasswords: Fetching GET ${API_BASE_URL}/passwords.php...`);
                     const response = await fetch(`${API_BASE_URL}/passwords.php`, {credentials: 'include'});
+                    console.log(`>>> fetchPasswords: Fetch status: ${response.status}`);
                     if (response.ok) {
                         const data = await response.json();
+                        console.log(`>>> fetchPasswords: Received ${data.length} passwords.`);
                         return data;
                     } else {
                          if (response.status === 401) {
-                             // Throw an error that can be caught by the caller (e.g., handleExport)
+                             console.log('>>> fetchPasswords: Session expired (401). Throwing error.');
                              throw new Error("Session expired. Please log in again.");
                          }
                          const errorData = await response.json().catch(() => ({}));
-                         console.error("Error fetching passwords:", response.status, errorData.error);
+                         console.error(">>> fetchPasswords: Server error:", response.status, errorData.error);
                          alert(`Error fetching passwords: ${errorData.error || response.statusText}`);
                          return [];
                     }
                 } catch (error) {
                     // Re-throw session errors, handle others
                     if (error.message.includes("Session expired")) {
+                        console.log('>>> fetchPasswords: Catching session expired error.');
                         throw error; // Let caller handle session expiry
                     }
-                    console.error('Network error fetching passwords:', error);
+                    console.error('>>> fetchPasswords: Network error:', error);
                     alert('Network error fetching passwords.');
                     return [];
+                } finally {
+                     console.log('>>> fetchPasswords: END');
                 }
             }
 
             async function fetchAndRenderPasswords(filter = '') {
+                console.log(`>>> fetchAndRenderPasswords: START with filter "${filter}"`);
                 try {
                     allPasswordsCache = await fetchPasswords();
+                    console.log(`>>> fetchAndRenderPasswords: Fetched ${allPasswordsCache.length} entries into cache.`);
                     renderPasswordsFromCache(filter);
                 } catch (error) {
+                     console.error('>>> fetchAndRenderPasswords: Error caught during fetch.', error);
                      // Handle session expiry during fetch
                      if (error.message.includes("Session expired")) {
+                         console.log('>>> fetchAndRenderPasswords: Handling session expired error.');
                          showLoginScreenWithError(error.message);
                          // Clear the list or show an appropriate message
                          passwordList.innerHTML = `<li class="no-entries">Session expired. Please log in.</li>`;
@@ -1341,13 +1441,16 @@
                          allPasswordsCache = []; // Clear cache
                      } else {
                          // Handle other fetch errors if needed
+                         console.log('>>> fetchAndRenderPasswords: Handling other fetch error.');
                          passwordList.innerHTML = `<li class="no-entries">Error loading entries.</li>`;
                          exportButton.disabled = true;
                      }
                 }
+                 console.log('>>> fetchAndRenderPasswords: END');
             }
 
             function renderPasswordsFromCache(filter = '') {
+                console.log(`>>> renderPasswordsFromCache: START with filter "${filter}"`);
                 passwordList.innerHTML = '';
                 const lowerCaseFilter = filter.toLowerCase().trim();
 
@@ -1355,22 +1458,23 @@
                     (p.website && p.website.toLowerCase().includes(lowerCaseFilter)) ||
                     (p.username && p.username.toLowerCase().includes(lowerCaseFilter))
                 );
+                console.log(`>>> renderPasswordsFromCache: Filtered list size: ${filteredPasswords.length}`);
 
                 exportButton.disabled = allPasswordsCache.length === 0;
+                console.log(`>>> renderPasswordsFromCache: Export button disabled: ${exportButton.disabled}`);
 
                 if (filteredPasswords.length === 0) {
                     const message = allPasswordsCache.length === 0
                         ? 'Your vault is empty. Add an entry using the form above!'
                         : 'No entries match your search.';
+                    console.log(`>>> renderPasswordsFromCache: Displaying message: "${message}"`);
                     passwordList.innerHTML = `<li class="no-entries">${message}</li>`;
                 } else {
                     filteredPasswords.sort((a, b) => (a.website || '').localeCompare(b.website || ''));
-
+                    console.log(`>>> renderPasswordsFromCache: Rendering ${filteredPasswords.length} list items.`);
                     filteredPasswords.forEach(entry => {
                         const listItem = document.createElement('li');
                         listItem.dataset.id = entry.id;
-                        // Data is assumed safe as it came from our controlled backend
-                        // (though escaping display values is still best practice)
                         listItem.innerHTML = createPasswordListItemHTML({
                              ...entry,
                              website: escapeHtml(entry.website),
@@ -1379,9 +1483,11 @@
                         passwordList.appendChild(listItem);
                     });
                 }
+                 console.log('>>> renderPasswordsFromCache: END');
             }
 
             function createPasswordListItemHTML(entry) {
+                // console.log(`>>> createPasswordListItemHTML: Creating HTML for ID ${entry.id}`); // Can be noisy
                 const escapedWebsite = entry.website || 'N/A';
                 const escapedUsername = entry.username || 'N/A';
 
@@ -1414,6 +1520,7 @@
 
 
             function togglePasswordDisplay(element, actualPassword) {
+                // console.log('>>> togglePasswordDisplay: Toggling visibility.'); // Can be noisy
                 if (element.textContent === MASKED_PASSWORD_CHAR) {
                     element.textContent = escapeHtml(actualPassword); // Escape just before display
                     element.classList.add('visible');
@@ -1424,40 +1531,53 @@
             }
 
             async function copyPassword(buttonElement, password) {
+                 console.log('>>> copyPassword: START');
                  const textSpan = buttonElement.querySelector('.text');
-                 if (!textSpan || buttonElement.disabled) return;
+                 if (!textSpan || buttonElement.disabled) {
+                     console.log('>>> copyPassword: Button disabled or text span not found.');
+                     return;
+                 }
                  const originalTextHTML = textSpan.innerHTML;
 
                  buttonElement.disabled = true;
                  buttonElement.classList.add('copied');
                  textSpan.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                 console.log('>>> copyPassword: Set to copied state.');
 
                  try {
                      await navigator.clipboard.writeText(password);
+                     console.log('>>> copyPassword: Copied to clipboard successfully.');
                      setTimeout(() => {
                          // Check element still exists before modifying
                          const currentTextSpan = buttonElement.querySelector('.text');
                          if (buttonElement && currentTextSpan) {
+                              console.log('>>> copyPassword: Resetting button state after timeout.');
                               currentTextSpan.innerHTML = originalTextHTML;
                               buttonElement.classList.remove('copied');
                               buttonElement.disabled = false;
+                         } else {
+                              console.log('>>> copyPassword: Button no longer exists, cannot reset state.');
                          }
                      }, 1800);
                  } catch (err) {
-                     console.error('Failed to copy password: ', err);
+                     console.error('>>> copyPassword: Failed to copy:', err);
                      alert('Failed to copy password.');
                       // Check element still exists before modifying
                       const currentTextSpan = buttonElement.querySelector('.text');
                       if (buttonElement && currentTextSpan) {
+                         console.log('>>> copyPassword: Resetting button state after error.');
                          currentTextSpan.innerHTML = originalTextHTML;
                          buttonElement.classList.remove('copied');
                          buttonElement.disabled = false;
                       }
                  }
+                 console.log('>>> copyPassword: END');
             }
 
             async function deletePasswordEntry(id) {
+                console.log(`>>> deletePasswordEntry: START for ID ${id}`);
                 try {
+                    console.log(`>>> deletePasswordEntry: Fetching DELETE ${API_BASE_URL}/passwords.php?id=${id}...`);
                     const response = await fetch(`${API_BASE_URL}/passwords.php?id=${id}`, {
                         method: 'DELETE',
                         headers: {
@@ -1465,26 +1585,31 @@
                         },
                         credentials: 'include' // Send session cookie
                     });
+                    console.log(`>>> deletePasswordEntry: Fetch status: ${response.status}`);
 
                     if (response.ok) {
-                        // Remove from cache and re-render immediately
+                        console.log('>>> deletePasswordEntry: Delete successful. Removing from cache and re-rendering.');
                         allPasswordsCache = allPasswordsCache.filter(entry => entry.id != id);
                         renderPasswordsFromCache(searchInput.value);
                     } else {
                          const data = await response.json().catch(() => ({}));
+                         console.error('>>> deletePasswordEntry: Delete failed.', data);
                          alert(`Error deleting entry: ${data.error || response.statusText}`);
                           if (response.status === 401) {
+                             console.log('>>> deletePasswordEntry: Session expired (401).');
                              showLoginScreenWithError("Session expired. Please log in again.");
                          }
                     }
                 } catch (error) {
-                    console.error('Error deleting password:', error);
+                    console.error('>>> deletePasswordEntry: Network error:', error);
                     alert('Network error while deleting entry.');
                 }
+                 console.log('>>> deletePasswordEntry: END');
             }
 
             // --- Utility Functions ---
             function resetPasswordVisibilityToggle() {
+                console.log('>>> resetPasswordVisibilityToggle: Resetting add form password field.');
                 passwordInput.type = 'password';
                 const icon = togglePasswordButton.querySelector('i');
                  if (icon) {
@@ -1496,16 +1621,20 @@
 
             function escapeHtml(unsafe) {
                 const str = String(unsafe || '');
+                // Basic escaping, consider a library for more complex needs if required
                 return str
-                     .replace(/&/g, "&amp;")
-                     .replace(/</g, "&lt;")
-                     .replace(/>/g, "&gt;")
-                     .replace(/"/g, "&quot;")
-                     .replace(/'/g, "&#039;");
+                     .replace(/&/g, "&")
+                     .replace(/</g, "<")
+                     .replace(/>/g, ">")
+                     .replace(/"/g, """)
+                     .replace(/'/g, "'");
              }
 
-        }); 
+            console.log('>>> Initial script setup complete (before DOMContentLoaded event).');
 
+        }); // End DOMContentLoaded
+
+        console.log('>>> Script execution finished.'); // Log script end
         // --- End Embedded JavaScript ---
     </script>
 
