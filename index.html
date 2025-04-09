@@ -1573,6 +1573,7 @@
             // *** CORRECTED escapeHtml function ***
             function escapeHtml(unsafe) {
                 const str = String(unsafe || ''); // Ensure input is a string
+                // console.log("Escaping:", str); // DEBUGGING: Uncomment to see what's being escaped
                 return str
                      .replace(/&/g, "&")   // Use & for ampersand
                      .replace(/</g, "<")    // Use < for less than
