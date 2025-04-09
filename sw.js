@@ -1,6 +1,7 @@
 // sw.js - Service Worker for Caching
 
-const CACHE_NAME = 'v2'; // Change version if you update assets
+const CACHE_NAME = 'v3'; // <<< INCREMENTED version number
+const API_BASE_URL = '/api'; // Define your API base path
 
 // IMPORTANT: List all files that make up your app's shell
 const CORE_ASSETS = [
