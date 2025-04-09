@@ -17,6 +17,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Local Vault">
+    <!-- Recommended PWA meta tag (Fix for deprecation warning) -->
+    <meta name="mobile-web-app-capable" content="yes">
     <!-- Optional: Add Apple touch icons if needed -->
     <!-- <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"> -->
 
@@ -697,6 +699,8 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            pointer-events: none; /* Allow clicks through container */
+            max-width: calc(100% - 40px); /* Prevent overflow on small screens */
         }
 
         .toast {
@@ -706,12 +710,16 @@
             border-radius: var(--border-radius);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             opacity: 0;
-            transform: translateX(100%);
-            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: translateX(110%); /* Start further off screen */
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
             display: flex;
             align-items: center;
             gap: 10px;
             font-size: 0.95rem;
+            pointer-events: auto; /* Allow interaction with individual toasts */
+            width: fit-content; /* Adjust width to content */
+            max-width: 100%; /* Ensure it doesn't exceed container */
+            margin-left: auto; /* Align toasts to the right */
         }
 
         .toast.show {
@@ -725,6 +733,27 @@
 
         .toast i {
             font-size: 1.2rem;
+            flex-shrink: 0; /* Prevent icon shrinking */
+        }
+        .toast span { /* Wrap text content */
+             word-break: break-word;
+        }
+
+        /* Style for confirmation button inside toast */
+        .toast-confirm-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+        .toast-confirm-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
 
@@ -782,8 +811,8 @@
             .search-container input { padding-left: 2.8rem; }
             .search-icon { left: 0.9rem; font-size: 1rem; }
 
-            #toast-container { bottom: 10px; right: 10px; width: calc(100% - 20px); }
-            .toast { padding: 10px 15px; font-size: 0.9rem; }
+            #toast-container { bottom: 10px; right: 10px; width: calc(100% - 20px); max-width: calc(100% - 20px); }
+            .toast { padding: 10px 15px; font-size: 0.9rem; width: 100%; margin-left: 0; } /* Full width on mobile */
         }
         /* --- End Embedded CSS --- */
     </style>
@@ -863,7 +892,6 @@
                  <!-- Loading Spinner -->
                  <div id="list-loading-spinner" class="spinner visible"></div>
                  <!-- Entries loaded here -->
-                 <!-- <li class="no-entries">Loading entries...</li> --> <!-- Replaced by spinner -->
             </ul>
         </section>
     </div>
@@ -901,7 +929,6 @@
 
             // --- DOM Elements ---
             const loginScreen = document.getElementById('login-screen');
-            // const pinSetupSection = document.getElementById('pin-setup-section'); // Removed - setup is server-side
             const pinEntrySection = document.getElementById('pin-entry-section');
             const pinContainer = document.getElementById('pin-container');
             let pinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit')); // Use let for reassignment
@@ -931,7 +958,10 @@
                 if (type === 'success') iconClass = 'fas fa-check-circle';
                 if (type === 'error') iconClass = 'fas fa-times-circle';
 
-                toast.innerHTML = `<i class="${iconClass}"></i> ${escapeHtml(message)}`;
+                // Use a span for the message content to allow wrapping and styling
+                // The message itself might contain HTML (like the confirm button), so don't escape the whole thing here.
+                // Escape individual parts *before* inserting them into the message string if needed.
+                toast.innerHTML = `<i class="${iconClass}"></i><span>${message}</span>`;
                 toastContainer.appendChild(toast);
 
                 // Trigger reflow to enable transition
@@ -939,15 +969,25 @@
 
                 toast.classList.add('show');
 
-                setTimeout(() => {
+                // Auto-dismiss timer
+                const timerId = setTimeout(() => {
                     toast.classList.remove('show');
-                    // Remove the element after the transition completes
                     toast.addEventListener('transitionend', () => {
-                        if (toast.parentNode === toastContainer) { // Check if still attached
+                        // Check if still attached before removing
+                        if (toast.parentNode === toastContainer) {
                             toastContainer.removeChild(toast);
                         }
-                    }, { once: true }); // Ensure listener runs only once
+                    }, { once: true });
                 }, duration);
+
+                 // Optional: Clear timer if the toast is clicked (useful for toasts with actions)
+                 toast.addEventListener('click', () => {
+                     // Don't clear if it's the confirm button itself being clicked
+                     // The confirm button handler will close the toast
+                 }, { once: true });
+
+                 // Return the toast element in case the caller wants to manipulate it
+                 return toast;
             }
 
 
@@ -976,7 +1016,6 @@
                 pinSpinner.classList.remove('visible'); // Hide spinner
                 pinInputs.forEach(input => input.value = '');
                 loginScreen.classList.add('visible');
-                // pinSetupSection.style.display = 'none'; // No longer needed
                 pinEntrySection.style.display = 'block';
                 vaultContainer.style.display = 'none';
                 setupPinInputListeners(); // Re-setup listeners
@@ -990,10 +1029,7 @@
 
             function hideLoginScreen() {
                  loginScreen.classList.remove('visible');
-                 // Vault display handled by initializeVault or successful login
             }
-
-            // PIN Setup related elements/listeners removed as setup is server-side.
 
             function setupPinInputListeners() {
                 // Clear existing listeners before adding new ones
@@ -1128,12 +1164,10 @@
                     return;
                 }
 
-                // Optional: Add loading state to save button
                 const saveButton = passwordForm.querySelector('button[type="submit"]');
                 const originalButtonText = saveButton.querySelector('.text').innerHTML;
                 saveButton.disabled = true;
                 saveButton.querySelector('.text').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/passwords.php`, {
@@ -1150,7 +1184,7 @@
                         passwordForm.reset();
                         resetPasswordVisibilityToggle();
                         showToast('Entry saved successfully!', 'success');
-                        fetchAndRenderPasswords(searchInput.value); // Re-fetch and render
+                        fetchAndRenderPasswords(searchInput.value);
                     } else {
                          const data = await response.json().catch(() => ({}));
                          const errorMsg = `Error adding entry: ${data.error || response.statusText}`;
@@ -1163,7 +1197,6 @@
                     console.error('Error adding password:', error);
                     showToast('Network error while adding entry.', 'error');
                 } finally {
-                     // Restore save button state
                      saveButton.disabled = false;
                      saveButton.querySelector('.text').innerHTML = originalButtonText;
                 }
@@ -1177,7 +1210,7 @@
             function handleListActions(e) {
                 const target = e.target;
                 const listItem = target.closest('li[data-id]');
-                if (!listItem || listItem.classList.contains('no-entries')) return; // Ignore clicks on empty message
+                if (!listItem || listItem.classList.contains('no-entries')) return;
 
                 const entryId = listItem.dataset.id;
                 const entry = allPasswordsCache.find(p => p.id == entryId);
@@ -1201,8 +1234,11 @@
 
                 const deleteButton = target.closest('.button-57.btn-delete');
                 if (deleteButton) {
-                    // Use a more modern confirmation if available, or fallback to confirm
-                    showToast(`Delete entry for "${entry.website}"? <button class='toast-confirm-btn' data-id='${entryId}'>Confirm</button>`, 'error', 10000); // Longer duration for confirmation
+                    // *** SYNTAX ERROR FIX APPLIED HERE ***
+                    // Use double quotes for HTML attributes inside the template literal
+                    const escapedWebsite = escapeHtml(entry.website || 'N/A'); // Escape website name for display in toast
+                    const message = `Delete entry for "${escapedWebsite}"? <button class="toast-confirm-btn" data-id="${entryId}">Confirm</button>`;
+                    showToast(message, 'error', 10000); // Longer duration for confirmation
                     return;
                 }
             }
@@ -1216,29 +1252,31 @@
                     if (toast) {
                          toast.classList.remove('show');
                          // Optional: remove immediately without waiting for transition
-                         // if (toast.parentNode) toast.parentNode.removeChild(toast);
+                         if (toast.parentNode) {
+                            // Add a small delay before removing to allow fade out if desired, or remove directly
+                            setTimeout(() => {
+                                if (toast.parentNode) toast.parentNode.removeChild(toast);
+                            }, 400); // Match transition duration
+                         }
                     }
                 }
              });
 
 
             async function handleExport() {
-                exportButton.disabled = true; // Disable while processing
+                exportButton.disabled = true;
                 const originalButtonText = exportButton.querySelector('.text').innerHTML;
                 exportButton.querySelector('.text').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
 
                 try {
-                    const passwordsToExport = await fetchPasswords(); // Fetch fresh data
+                    const passwordsToExport = await fetchPasswords();
 
                     if (passwordsToExport.length === 0) {
                         showToast("There are no entries to export.", 'info');
-                        return; // Exit early
+                        return;
                     }
 
-                    // Show warning via toast before proceeding
                     showToast("Warning: Exporting passwords in plain text. Store securely!", 'error', 5000);
-
-                    // Add a small delay to allow the user to read the warning
                     await new Promise(resolve => setTimeout(resolve, 1500));
 
                     const jsonData = JSON.stringify(passwordsToExport, null, 2);
@@ -1259,10 +1297,9 @@
                      const errorMsg = `Export failed: ${error.message || 'Unknown error'}`;
                      showToast(errorMsg, 'error');
                      if (error.message.includes("Session expired")) {
-                         handleSessionExpired(); // Trigger login screen
+                         handleSessionExpired();
                      }
                 } finally {
-                    // Restore export button state only if there are entries
                     exportButton.disabled = allPasswordsCache.length === 0;
                     exportButton.querySelector('.text').innerHTML = originalButtonText;
                 }
@@ -1272,8 +1309,8 @@
             // --- Vault Core Functions ---
 
             async function fetchPasswords() {
-                listLoadingSpinner.classList.add('visible'); // Show spinner
-                passwordList.innerHTML = ''; // Clear list while loading
+                listLoadingSpinner.classList.add('visible');
+                passwordList.innerHTML = '';
                 try {
                     const response = await fetch(`${API_BASE_URL}/passwords.php`, {credentials: 'include'});
                     if (response.ok) {
@@ -1289,13 +1326,12 @@
                     }
                 } catch (error) {
                     console.error('Network/Fetch error fetching passwords:', error);
-                    // Re-throw specific errors or a generic one
                     if (error.message.includes("Session expired")) {
                         throw error;
                     }
                     throw new Error(`Network error fetching passwords: ${error.message}`);
                 } finally {
-                     listLoadingSpinner.classList.remove('visible'); // Hide spinner
+                     listLoadingSpinner.classList.remove('visible');
                 }
             }
 
@@ -1311,13 +1347,13 @@
                      } else {
                          passwordList.innerHTML = `<li class="no-entries"><i class="fas fa-exclamation-circle"></i>Error loading entries.</li>`;
                      }
-                     exportButton.disabled = true; // Disable export on error
-                     allPasswordsCache = []; // Clear cache on error
+                     exportButton.disabled = true;
+                     allPasswordsCache = [];
                 }
             }
 
             function renderPasswordsFromCache(filter = '') {
-                passwordList.innerHTML = ''; // Clear previous entries
+                passwordList.innerHTML = '';
                 const lowerCaseFilter = filter.toLowerCase().trim();
 
                 const filteredPasswords = allPasswordsCache.filter(p =>
@@ -1325,7 +1361,6 @@
                     (p.username && p.username.toLowerCase().includes(lowerCaseFilter))
                 );
 
-                // Enable/disable export based on *total* entries, not filtered ones
                 exportButton.disabled = allPasswordsCache.length === 0;
 
                 if (filteredPasswords.length === 0) {
@@ -1335,20 +1370,16 @@
                     const iconClass = allPasswordsCache.length === 0 ? 'fa-box-open' : 'fa-search';
                     passwordList.innerHTML = `<li class="no-entries"><i class="fas ${iconClass}"></i>${message}</li>`;
                 } else {
-                    // Sort before rendering
                     filteredPasswords.sort((a, b) => (a.website || '').localeCompare(b.website || ''));
 
-                    // Use DocumentFragment for performance when adding many items
                     const fragment = document.createDocumentFragment();
                     filteredPasswords.forEach(entry => {
                         const listItem = document.createElement('li');
                         listItem.dataset.id = entry.id;
-                        // Escape data just before inserting into HTML
                         listItem.innerHTML = createPasswordListItemHTML({
                              ...entry,
-                             website: escapeHtml(entry.website),
-                             username: escapeHtml(entry.username)
-                             // Password is not directly in HTML initially
+                             website: escapeHtml(entry.website), // Escape before creating HTML
+                             username: escapeHtml(entry.username) // Escape before creating HTML
                         });
                         fragment.appendChild(listItem);
                     });
@@ -1357,7 +1388,7 @@
             }
 
             function createPasswordListItemHTML(entry) {
-                // Assumes entry.website and entry.username are already escaped
+                // Assumes entry.website and entry.username are already escaped by the caller
                 const escapedWebsite = entry.website || 'N/A';
                 const escapedUsername = entry.username || 'N/A';
 
@@ -1403,20 +1434,16 @@
                  const textSpan = buttonElement.querySelector('.text');
                  if (!textSpan || buttonElement.disabled) return;
 
-                 // Store original HTML to restore later
                  const originalTextHTML = textSpan.innerHTML;
                  const wasCopied = buttonElement.classList.contains('copied');
 
-                 // Temporarily disable and show feedback
                  buttonElement.disabled = true;
-                 buttonElement.classList.add('copied'); // Use 'copied' class for styling
+                 buttonElement.classList.add('copied');
                  textSpan.innerHTML = '<i class="fas fa-check"></i> Copied!';
 
                  try {
                      await navigator.clipboard.writeText(password);
-                     // Keep 'Copied!' message for a short duration
                      setTimeout(() => {
-                         // Check if the button still exists and hasn't been changed by another action
                          const currentTextSpan = buttonElement.querySelector('.text');
                          if (buttonElement && currentTextSpan && buttonElement.classList.contains('copied')) {
                               currentTextSpan.innerHTML = originalTextHTML;
@@ -1427,7 +1454,6 @@
                  } catch (err) {
                      console.error('Failed to copy password: ', err);
                      showToast('Failed to copy password.', 'error');
-                      // Restore button immediately on error
                       const currentTextSpan = buttonElement.querySelector('.text');
                       if (buttonElement && currentTextSpan) {
                          currentTextSpan.innerHTML = originalTextHTML;
@@ -1438,13 +1464,10 @@
             }
 
             async function deletePasswordEntry(id) {
-                // Find the list item to potentially animate removal
                 const listItem = passwordList.querySelector(`li[data-id="${id}"]`);
-
-                // Optional: Add visual feedback to the item being deleted
                 if (listItem) {
                     listItem.style.opacity = '0.5';
-                    listItem.style.pointerEvents = 'none'; // Prevent further interaction
+                    listItem.style.pointerEvents = 'none';
                 }
 
                 try {
@@ -1456,9 +1479,8 @@
 
                     if (response.ok) {
                         showToast('Entry deleted successfully.', 'success');
-                        // Remove from cache and re-render immediately
                         allPasswordsCache = allPasswordsCache.filter(entry => entry.id != id);
-                        renderPasswordsFromCache(searchInput.value); // Re-render the list
+                        renderPasswordsFromCache(searchInput.value);
                     } else {
                          const data = await response.json().catch(() => ({}));
                          const errorMsg = `Error deleting entry: ${data.error || response.statusText}`;
@@ -1466,7 +1488,6 @@
                           if (response.status === 401) {
                              handleSessionExpired();
                          }
-                         // Restore item appearance on error
                          if (listItem) {
                              listItem.style.opacity = '1';
                              listItem.style.pointerEvents = 'auto';
@@ -1475,7 +1496,6 @@
                 } catch (error) {
                     console.error('Error deleting password:', error);
                     showToast('Network error while deleting entry.', 'error');
-                     // Restore item appearance on network error
                      if (listItem) {
                          listItem.style.opacity = '1';
                          listItem.style.pointerEvents = 'auto';
@@ -1495,7 +1515,7 @@
             }
 
             function escapeHtml(unsafe) {
-                const str = String(unsafe || ''); // Ensure input is a string
+                const str = String(unsafe || '');
                 return str
                      .replace(/&/g, "&")
                      .replace(/</g, "<")
@@ -1506,10 +1526,10 @@
 
              function handleSessionExpired() {
                  showToast("Session expired. Please log in again.", "error", 5000);
-                 vaultContainer.style.display = 'none'; // Hide vault
-                 vaultContainer.dataset.initialized = ''; // Reset initialized flag
-                 allPasswordsCache = []; // Clear cache
-                 showLoginScreen(); // Show login screen
+                 vaultContainer.style.display = 'none';
+                 vaultContainer.dataset.initialized = '';
+                 allPasswordsCache = [];
+                 showLoginScreen();
              }
 
         }); // End DOMContentLoaded
