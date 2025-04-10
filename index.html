@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Favicon Link -->
+    <link rel="icon" type="image/png" href="https://i.ibb.co/7JfMHZQj/vault.png">
+
+    <!-- PWA Manifest Link (Ensure manifest.json exists at the root) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- PWA Theme color -->
+    <meta name="theme-color" content="#5480ca"> <!-- Updated to match primary color -->
+
+    <!-- Add to home screen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Local Vault">
+    <!-- Optional: Add Apple touch icons if needed -->
+    <!-- <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"> -->
+
+    <title>Vault</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- Start Embedded CSS --- */
+
+        /* --- Variables & Base --- */
+        :root {
+            --primary-color: #5480ca; /* Slightly softer blue */
+            --secondary-color: #4fc3b4; /* Softer Teal */
+            --tertiary-color: #f39c12; /* Orange for export */
+            --background-start: #eef4f8; /* Light blueish grey */
+            --background-end: #f8f0fc;   /* Light purplish grey */
+            --card-background: #ffffff;
+            --text-color: #34495e; /* Darker blue-grey */
+            --text-muted: #7f8c8d; /* Grey */
+            --border-color: #e0e0e0; /* Lighter grey border */
+            --danger-color: #e74c3c; /* Softer red */
+            --success-color: #2ecc71; /* Softer green */
+            --font-family: 'Poppins', sans-serif;
+            --border-radius: 10px; /* Slightly more rounded */
+            --base-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --transition-speed: 0.3s;
+
+            /* Button 57 Specific Colors */
+            --btn57-dark: #18181a;
+            --btn57-light: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-color);
+            line-height: 1.7;
+            display: flex; /* Use flex for centering login */
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--background-start), var(--background-end));
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite; /* Slightly faster animation */
+            /* Prevent accidental horizontal scroll caused by animations/transforms */
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Login Screen Styles --- */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(238, 244, 248, 0.9); /* Slightly transparent background */
+            backdrop-filter: blur(8px); /* Increased blur */
+            display: flex; /* Use flex to center content */
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out; /* Added visibility transition */
+            opacity: 0;
+            visibility: hidden; /* Start hidden and non-interactive */
+        }
+
+        #login-screen.visible {
+             opacity: 1;
+             visibility: visible; /* Make visible and interactive */
+        }
+
+        .login-container {
+            background-color: var(--card-background);
+            padding: 2.5rem 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--hover-shadow); /* Use hover shadow for prominence */
+            text-align: center;
+            max-width: 420px; /* Slightly wider */
+            width: 100%;
+            transform: scale(0.95); /* Start slightly smaller */
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease-out; /* Pop-in effect */
+        }
+        #login-screen.visible .login-container {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .login-container h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .login-container h2 i {
+            margin-right: 0.6rem;
+            vertical-align: middle; /* Align icon better */
+        }
+
+        .login-container p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        #pin-entry-section, #pin-setup-section {
+             margin-bottom: 1.5rem;
+        }
+
+        .pin-input-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* Increased gap */
+            margin-bottom: 1.5rem;
+        }
+
+        .pin-digit {
+            width: 55px; /* Increased size */
+            height: 65px; /* Increased size */
+            font-size: 2rem; /* Larger font */
+            text-align: center;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            caret-color: var(--primary-color); /* Cursor color */
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease, transform 0.1s ease;
+            /* Remove spinners for number input */
+            -moz-appearance: textfield;
+            appearance: textfield;
+            line-height: 61px; /* Vertically center text */
+        }
+        .pin-digit::-webkit-outer-spin-button,
+        .pin-digit::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .pin-digit:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(84, 128, 202, 0.25); /* Adjusted shadow color */
+            transform: scale(1.05); /* Slightly scale up on focus */
+        }
+
+        #pin-error-message {
+            color: var(--danger-color);
+            min-height: 1.2em; /* Reserve space */
+            margin-top: -1rem; /* Adjust spacing */
+            margin-bottom: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex; /* Use flex for icon alignment */
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        #pin-error-message::before { /* Add icon for error */
+            content: "\f071"; /* Font Awesome exclamation-triangle */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            display: inline-block;
+        }
+        #pin-error-message:empty::before { /* Hide icon when empty */
+            display: none;
+        }
+
+
+        /* Shake animation for incorrect PIN */
+        @keyframes shake {
+          10%, 90% { transform: translateX(-1px); }
+          20%, 80% { transform: translateX(2px); }
+          30%, 50%, 70% { transform: translateX(-4px); }
+          40%, 60% { transform: translateX(4px); }
+        }
+        .shake {
+          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Setup Form Styles (Kept for visual consistency or instructions) */
+        #pin-setup-section .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        #pin-setup-section label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        #pin-setup-section input[type="password"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            background-color: #e9ecef; /* Indicate disabled state */
+        }
+        #pin-setup-section input[type="password"]:focus {
+             outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(84, 128, 202, 0.2);
+        }
+        #setup-pin-button {
+            margin-top: 1rem;
+            width: 100%;
+        }
+        #setup-error-message {
+            color: var(--danger-color);
+            min-height: 1.2em;
+            margin-top: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+
+        /* --- Vault Container (Initially Hidden) --- */
+        #vault-container {
+            display: none; /* Hide vault initially */
+            width: 100%; /* Ensure container respects body width */
+            max-width: 900px; /* Slightly wider */
+            margin: 3rem auto;
+            padding: 2.5rem 3rem; /* Increased padding */
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--base-shadow);
+            flex-grow: 1; /* Allow it to take available space */
+            transition: box-shadow var(--transition-speed) ease, opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0; /* Start hidden for fade-in */
+            transform: translateY(20px); /* Start slightly lower for fade-in */
+        }
+        #vault-container.visible { /* Class added by JS after login */
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #vault-container:hover {
+             box-shadow: var(--hover-shadow);
+        }
+
+        /* --- Header --- */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0;
+            font-weight: 600;
+            font-size: 2.2rem;
+            word-break: break-word; /* Prevent overflow if title is very long */
+        }
+
+        header h1 .icon {
+            margin-right: 0.75rem;
+            vertical-align: middle; /* Better icon alignment */
+            font-size: 2rem; /* Slightly smaller icon relative to text */
+        }
+
+        /* --- Sections & Headings --- */
+        .add-password-form,
+        .password-list-section {
+            margin-bottom: 3rem; /* Increased spacing */
+            padding: 2rem 2.5rem; /* Increased padding */
+            background-color: #fcfdff; /* Very light blue background */
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap; /* Allows button to wrap below */
+            gap: 1rem; /* Adds space when wrapping */
+            border-bottom: 1px solid var(--border-color); /* Add subtle separator */
+            padding-bottom: 1.5rem; /* Space below separator */
+        }
+
+        h2 { /* Shared by login and vault */
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.6rem;
+            display: inline-flex; /* Use flex for icon alignment */
+            align-items: center;
+            gap: 0.7rem; /* Space between icon and text */
+            margin-right: 1rem; /* Keep some space */
+            flex-shrink: 0; /* Prevent h2 from shrinking too much */
+            margin-bottom: 0; /* Remove default margin */
+        }
+        /* Remove border from vault sections h2, use section-header border instead */
+        #vault-container h2 {
+             border-bottom: none;
+             padding-bottom: 0;
+        }
+
+
+        /* --- Forms --- */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"], /* Applied to vault password input */
+        .search-container input[type="text"] {
+            width: 100%;
+            padding: 0.9rem 1.1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text-color);
+            background-color: #fff;
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        }
+        .form-group input::placeholder,
+        .search-container input::placeholder {
+            color: #bbb;
+        }
+
+        .form-group input:focus,
+        .search-container input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(84, 128, 202, 0.2); /* Adjusted shadow color */
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-input-wrapper input { /* Vault password input */
+            padding-right: 3.5rem; /* Space for the button */
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 1px;
+            top: 1px;
+            bottom: 1px;
+            width: 3.2rem;
+            background: transparent;
+            border: none;
+            border-left: 1px solid var(--border-color);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-visibility:hover {
+            color: var(--primary-color);
+            background-color: #f0f5fa;
+        }
+
+        .toggle-visibility i {
+            pointer-events: none;
+        }
+
+        /* --- Button 57 Styles (Refined) --- */
+        .button-57 {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid var(--btn57-dark); /* Base border */
+          color: var(--btn57-dark); /* Base text color */
+          display: inline-block;
+          font-size: 15px;
+          line-height: 1; /* Adjusted for better vertical centering */
+          padding: 16px 20px 15px; /* Adjusted padding */
+          text-decoration: none;
+          cursor: pointer;
+          background: var(--btn57-light); /* Base background */
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+          border-radius: var(--border-radius);
+          font-family: inherit;
+          font-weight: 600;
+          margin: 5px;
+          vertical-align: middle;
+          text-align: center;
+          transition: all var(--transition-speed) ease; /* Use variable */
+        }
+
+        .button-57 .text { /* Use .text class for first span */
+          position: relative;
+          transition: color 600ms cubic-bezier(0.48, 0, 0.12, 1);
+          z-index: 10;
+          display: inline-flex; /* Align icon and text */
+          align-items: center;
+          justify-content: center;
+          width: 100%; /* Make span take full width for centering */
+          gap: 0.6rem; /* Space between icon and text */
+        }
+        /* Removed i selector, gap handles spacing */
+
+        .button-57 span:last-child {
+          color: var(--btn57-light); /* Alternate text is light */
+          display: block;
+          position: absolute;
+          bottom: 0;
+          transition: all 500ms cubic-bezier(0.48, 0, 0.12, 1);
+          z-index: 100;
+          opacity: 0;
+          top: 50%;
+          left: 50%;
+          transform: translateY(225%) translateX(-50%);
+          height: 14px;
+          line-height: 13px;
+          white-space: nowrap;
+        }
+
+        .button-57:after {
+          content: "";
+          position: absolute;
+          bottom: -50%;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: var(--btn57-dark); /* Base wipe color */
+          transform-origin: bottom center;
+          transition: transform 600ms cubic-bezier(0.48, 0, 0.12, 1);
+          transform: skewY(9.3deg) scaleY(0);
+          z-index: 50;
+          border-radius: inherit;
+        }
+
+        .button-57:hover:not(:disabled):after {
+          transform-origin: bottom center;
+          transform: skewY(9.3deg) scaleY(2);
+        }
+
+        .button-57:hover:not(:disabled) span:last-child {
+          transform: translateX(-50%) translateY(-100%);
+          opacity: 1;
+          transition: all 900ms cubic-bezier(0.48, 0, 0.12, 1);
+        }
+
+        .button-57:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .button-57:disabled:after {
+             transform: skewY(9.3deg) scaleY(0);
+        }
+        .button-57:disabled span:last-child {
+            opacity: 0;
+        }
+
+
+        /* --- Button 57 Color Variations --- */
+
+        /* Primary (Add/Save/Set PIN) */
+        .button-57-primary {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .button-57-primary:after {
+            background-color: var(--primary-color);
+        }
+        .button-57-primary:hover:not(:disabled) .text {
+            color: var(--btn57-light);
+        }
+
+        /* Secondary (Copy) */
+        .button-57-secondary {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+            padding: 10px 14px 9px; /* Adjusted padding for list buttons */
+            font-size: 14px;
+        }
+        .button-57-secondary:after {
+            background-color: var(--secondary-color);
+        }
+        .button-57-secondary:hover:not(:disabled) .text {
+            color: var(--btn57-dark);
+        }
+        .button-57-secondary span:last-child {
+             color: var(--btn57-dark);
+        }
+        /* Copied State for Secondary */
+        .button-57-secondary.copied {
+            border-color: var(--success-color);
+            color: var(--btn57-light); /* Text light */
+            background-color: var(--success-color); /* Fill background */
+        }
+        .button-57-secondary.copied:after {
+             transform: skewY(9.3deg) scaleY(0); /* Hide wipe effect when copied */
+        }
+         .button-57-secondary.copied span:last-child {
+             opacity: 0; /* Hide alternate text */
+         }
+         /* Ensure disabled state overrides copied state */
+         .button-57-secondary.copied:disabled {
+             background-color: var(--success-color);
+             color: var(--btn57-light);
+             opacity: 0.7; /* Slightly different disabled opacity */
+         }
+
+
+        /* Danger (Delete) */
+        .button-57-danger {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+            padding: 10px 14px 9px; /* Adjusted padding for list buttons */
+            font-size: 14px;
+        }
+        .button-57-danger:after {
+            background-color: var(--danger-color);
+        }
+        .button-57-danger:hover:not(:disabled) .text {
+            color: var(--btn57-light);
+        }
+
+        /* Export */
+        .button-57-export {
+            border-color: var(--tertiary-color);
+            color: var(--tertiary-color);
+        }
+        .button-57-export:after {
+            background-color: var(--tertiary-color);
+        }
+        .button-57-export:hover:not(:disabled) .text {
+            color: var(--btn57-light);
+        }
+
+        /* --- Password List --- */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-container input {
+            padding-left: 3rem; /* Space for icon */
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            pointer-events: none; /* Prevent icon blocking input focus */
+        }
+
+        .password-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .password-list li {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 1.2rem;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem; /* Increased gap */
+            box-shadow: var(--base-shadow);
+            transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        }
+
+        .password-list li:hover {
+             transform: translateY(-5px) scale(1.015); /* Enhanced hover effect */
+             box-shadow: var(--hover-shadow);
+        }
+
+        .password-list li.no-entries {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 2rem; /* Increased padding */
+            font-style: italic;
+            justify-content: center;
+            border: 2px dashed var(--border-color);
+            background-color: #f9fafb; /* Slightly different background */
+            box-shadow: none;
+            transform: none;
+            flex-direction: column;
+            gap: 1rem; /* Space for potential icon */
+            font-size: 1.1rem;
+        }
+         .password-list li.no-entries::before { /* Optional: Add icon */
+            content: "\f52d"; /* Font Awesome box-open */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 2.5rem;
+            color: var(--border-color);
+         }
+        .password-list li.no-entries:hover {
+             transform: none;
+             box-shadow: none;
+             background-color: #f7f8fa; /* Slight hover change */
+        }
+
+
+        .password-entry-details {
+            flex-grow: 1;
+            min-width: 250px; /* Ensure enough space before wrapping */
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .password-entry-details strong {
+            color: var(--primary-color);
+            display: block;
+            font-size: 1.3rem; /* Slightly larger */
+            font-weight: 600;
+            margin-bottom: 0.75rem; /* Increased spacing */
+        }
+
+        .password-entry-details .detail-item {
+            margin-bottom: 0.5rem; /* Increased spacing */
+            font-size: 1rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem; /* Increased gap */
+        }
+
+        .detail-item .label {
+            font-weight: 600;
+            color: var(--text-muted);
+            min-width: 60px; /* Slightly wider label area */
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            display: inline-flex; /* Align icon */
+            align-items: center;
+            gap: 0.4rem; /* Space between icon and text */
+        }
+        .detail-item .label i {
+            width: 1em; /* Ensure consistent icon width */
+            text-align: center;
+        }
+
+        .detail-item .username-value,
+        .detail-item .password-value-container {
+            flex-grow: 1;
+            min-width: 0;
+            line-height: 1.5; /* Improved line height for wrapped text */
+        }
+
+        .password-value {
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            display: inline-block;
+            background-color: #ecf0f1;
+            padding: 0.2rem 0.6rem;
+            border-radius: 5px;
+            user-select: none;
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .password-value:hover {
+            background-color: #dfe6e9;
+        }
+
+        .password-value.visible {
+            background-color: transparent;
+            padding: 0.2rem 0;
+            user-select: text;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .password-entry-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            gap: 0.6rem; /* Increased gap */
+        }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            margin-top: auto; /* Push footer to bottom */
+            padding: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            background-color: rgba(255, 255, 255, 0.7); /* Slightly more opaque */
+            border-top: 1px solid var(--border-color);
+            width: 100%; /* Ensure full width */
+        }
+
+        /* --- Responsive Design --- */
+
+        /* Medium Screens (Tablets) */
+        @media (max-width: 768px) {
+            #vault-container {
+                margin: 1.5rem 1rem;
+                padding: 2rem 1.5rem; /* Adjusted padding */
+            }
+            .login-container {
+                padding: 2rem 1.5rem;
+                max-width: 380px; /* Adjusted max-width */
+            }
+            .pin-digit {
+                width: 50px;
+                height: 60px;
+                font-size: 1.8rem;
+                line-height: 56px; /* Adjust line height */
+            }
+            .pin-input-container { gap: 10px; }
+
+            header h1 { font-size: 1.9rem; }
+            .section-header {
+                 margin-bottom: 1.5rem;
+                 padding-bottom: 1rem; /* Adjust padding */
+                 gap: 1rem;
+            }
+            h2 {
+                font-size: 1.4rem;
+                gap: 0.6rem;
+            }
+
+            /* Make Export button full width when it wraps */
+            .section-header .button-57-export {
+                width: 100%;
+                margin: 0.5rem 0 0 0; /* Add top margin when wrapped */
+            }
+
+            /* Make Add Entry button full width */
+            #password-form .button-57-primary {
+                width: 100%;
+                margin: 0;
+            }
+
+            .password-list li {
+                flex-direction: column; /* Stack details and actions */
+                align-items: stretch; /* Stretch items full width */
+                padding: 1.2rem 1.5rem;
+                gap: 1.2rem;
+            }
+            .password-list li:hover {
+                 transform: translateY(-3px); /* Reduced hover effect */
+                 scale: 1; /* No scaling on mobile */
+            }
+
+            .password-entry-details {
+                width: 100%;
+                min-width: auto;
+            }
+
+             .password-entry-actions {
+                width: 100%;
+                justify-content: flex-end; /* Keep buttons to the right */
+                gap: 0.5rem;
+            }
+             /* Adjust list button size */
+             .button-57-secondary, .button-57-danger {
+                 padding: 9px 12px 8px;
+                 font-size: 13px;
+             }
+        }
+
+        /* Small Screens (Phones) */
+        @media (max-width: 480px) {
+            html { font-size: 15px; }
+            #vault-container {
+                margin: 1rem 0.5rem;
+                padding: 1.5rem 1rem; /* Adjusted padding */
+                border-radius: 8px;
+            }
+            .login-container {
+                padding: 1.5rem 1rem;
+                max-width: 95%;
+            }
+            .pin-digit {
+                width: 45px;
+                height: 55px;
+                font-size: 1.6rem;
+                line-height: 51px; /* Adjust line height */
+            }
+            .pin-input-container { gap: 8px; }
+
+            .add-password-form, .password-list-section {
+                padding: 1.5rem 1rem; /* Adjusted padding */
+            }
+
+            header {
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+            }
+            header h1 { font-size: 1.7rem; }
+            header h1 .icon { font-size: 1.5rem; }
+
+            .section-header { margin-bottom: 1.5rem; gap: 0.8rem; padding-bottom: 1rem;}
+            h2 { font-size: 1.3rem; gap: 0.5rem; }
+
+            /* Adjust base button size for smallest screens */
+            .button-57 {
+                 font-size: 14px;
+                 padding: 14px 16px 13px;
+                 margin: 3px;
+            }
+            /* Adjust list button sizes */
+            .button-57-secondary, .button-57-danger {
+                font-size: 13px;
+                padding: 9px 10px 8px;
+            }
+            /* Keep Export/Add/Setup buttons reasonably sized */
+            .button-57-export,
+            #password-form .button-57-primary,
+            #setup-pin-button {
+                 font-size: 14px;
+                 padding: 14px 16px 13px;
+            }
+
+            .password-entry-details strong { font-size: 1.15rem; margin-bottom: 0.6rem; }
+            .password-entry-details .detail-item { font-size: 0.95rem; gap: 0.5rem; margin-bottom: 0.4rem;}
+            .detail-item .label { min-width: 55px; font-size: 0.85rem; gap: 0.3rem;}
+
+            .password-list li { padding: 1rem 1.2rem; gap: 1rem; }
+            .password-list li.no-entries { padding: 2rem 1rem; font-size: 1rem; }
+            .password-list li.no-entries::before { font-size: 2rem; }
+
+
+            .search-container input { padding-left: 2.5rem; }
+            .search-icon { left: 0.8rem; font-size: 1rem; }
+
+            footer { padding: 1rem; font-size: 0.85rem; }
+        }
+        /* --- End Embedded CSS --- */
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen"> <!-- Controlled by .visible class -->
+        <div class="login-container">
+            <!-- PIN Setup Section (Informational) -->
+            <div id="pin-setup-section" style="display: none;">
+                <h2><i class="fas fa-user-shield"></i> Set Up Your PIN</h2>
+                <p>PIN setup must be done via the server-side `setup_pin.php` script. Contact the administrator if a PIN needs to be set or reset.</p>
+                <form id="pin-setup-form">
+                    <div class="form-group">
+                        <label for="new-pin">Enter 4-Digit PIN</label>
+                        <input type="password" id="new-pin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="4" required autocomplete="new-password" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-pin">Confirm PIN</label>
+                        <input type="password" id="confirm-pin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="4" required autocomplete="new-password" disabled>
+                    </div>
+                    <div id="setup-error-message"></div>
+                    <button type="submit" id="setup-pin-button" class="button-57 button-57-primary" role="button" disabled>
+                        <span class="text"><i class="fas fa-save"></i> Set PIN</span>
+                        <span>Confirm Setup</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- PIN Entry Section -->
+            <div id="pin-entry-section" style="display: none;"> <!-- Shown/hidden by JS -->
+                <h2><i class="fas fa-lock"></i> Enter PIN</h2>
+                <p>Enter the 4-digit PIN to unlock the vault.</p>
+                <div class="pin-input-container" id="pin-container">
+                    <!-- Inputs will be dynamically generated/handled by JS for listeners -->
+                    <input type="password" class="pin-digit" id="pin-1" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="one-time-code">
+                    <input type="password" class="pin-digit" id="pin-2" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="one-time-code">
+                    <input type="password" class="pin-digit" id="pin-3" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="one-time-code">
+                    <input type="password" class="pin-digit" id="pin-4" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="one-time-code">
+                </div>
+                <div id="pin-error-message"></div> <!-- Error message here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Vault Content (Initially Hidden, controlled by .visible class) -->
+    <div id="vault-container" class="container"> <!-- Add class="visible" via JS -->
+        <header>
+            <h1><i class="fas fa-shield-alt icon"></i> Vault</h1>
+        </header>
+
+        <section class="add-password-form">
+             <!-- Updated h2 structure -->
+            <h2><i class="fas fa-plus-circle"></i> Add New Entry</h2>
+            <form id="password-form">
+                <div class="form-group">
+                    <label for="website-name">Website / Service Name</label>
+                    <input type="text" id="website-name" required placeholder="e.g., My Favorite Website">
+                </div>
+                <div class="form-group">
+                    <label for="username">Username / Email</label>
+                    <input type="text" id="username" required placeholder="e.g., user@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" required placeholder="Enter your password">
+                        <button type="button" class="toggle-visibility" title="Show / Hide Password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="button-57 button-57-primary" role="button">
+                    <span class="text"><i class="fas fa-save"></i> Save Entry</span>
+                    <span>Confirm Save</span>
+                </button>
+            </form>
+        </section>
+
+        <section class="password-list-section">
+            <div class="section-header">
+                 <!-- Updated h2 structure -->
+                <h2><i class="fas fa-list-ul"></i> Stored Entries</h2>
+                <button id="export-button" class="button-57 button-57-export" role="button" title="Export all entries to a JSON file" disabled> <!-- Initially disabled -->
+                    <span class="text"><i class="fas fa-download"></i> Export All</span>
+                    <span>Download File</span>
+                </button>
+            </div>
+             <div class="search-container">
+                 <i class="fas fa-search search-icon"></i>
+                 <input type="text" id="search-input" placeholder="Search by website or username...">
+            </div>
+            <ul id="password-list" class="password-list">
+                <!-- Password entries dynamically loaded here -->
+                 <li class="no-entries">Loading entries...</li> <!-- Initial loading message -->
+            </ul>
+        </section>
+    </div>
+
+    <footer>
+        <p>© 2025 Enhanced Vault Demo — Powered by Danav</p> <!-- Updated footer text -->
+    </footer>
+
+
+    <script>
+        // --- Start Embedded JavaScript ---
+        // (Functionality remains the same as your provided script)
+        // Minor adjustments for class-based visibility control
+
+        // --- PWA Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js') // Use absolute path from the root
+              .then(registration => {
+                console.log('Service Worker registered successfully with scope:', registration.scope);
+              })
+              .catch(error => {
+                console.error('Service Worker registration failed:', error);
+              });
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Constants ---
+            const MASKED_PASSWORD_CHAR = '••••••••';
+            const API_BASE_URL = '/api'; // IMPORTANT: Adjust if needed
+
+            // --- DOM Elements ---
+            const loginScreen = document.getElementById('login-screen');
+            const pinSetupSection = document.getElementById('pin-setup-section');
+            const pinEntrySection = document.getElementById('pin-entry-section');
+            const pinSetupForm = document.getElementById('pin-setup-form');
+            const setupErrorMessage = document.getElementById('setup-error-message');
+            const pinContainer = document.getElementById('pin-container');
+            // Select inputs within the container *after* ensuring they exist
+            let pinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit'));
+            const pinErrorMessage = document.getElementById('pin-error-message');
+            const vaultContainer = document.getElementById('vault-container');
+            const passwordForm = document.getElementById('password-form');
+            const websiteInput = document.getElementById('website-name');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const passwordList = document.getElementById('password-list');
+            const togglePasswordButton = document.querySelector('.toggle-visibility');
+            const searchInput = document.getElementById('search-input');
+            const exportButton = document.getElementById('export-button');
+
+            // --- Initialization ---
+            checkAuthenticationStatus();
+
+            // --- Login Logic ---
+
+            async function checkAuthenticationStatus() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/passwords.php`, {credentials: 'include'});
+                    if (response.ok) {
+                        hideLoginScreen();
+                        // Delay showing vault slightly for transition
+                        setTimeout(() => {
+                            vaultContainer.style.display = 'block';
+                            requestAnimationFrame(() => { // Ensure display:block is rendered
+                                vaultContainer.classList.add('visible');
+                            });
+                            initializeVault();
+                        }, 100); // Small delay after login screen fades
+                    } else if (response.status === 401) {
+                        showLoginScreen();
+                    } else {
+                        console.error("Error checking auth status:", response.status, await response.text());
+                        showLoginScreenWithError(`Server error (${response.status}) checking login status.`);
+                    }
+                } catch (error) {
+                    console.error("Network error checking auth status:", error);
+                    showLoginScreenWithError("Network error. Cannot reach server.");
+                }
+            }
+
+            function showLoginScreen() {
+                pinErrorMessage.textContent = '';
+                pinInputs.forEach(input => input.value = '');
+                loginScreen.classList.add('visible'); // Use class for visibility/animation
+                pinSetupSection.style.display = 'none'; // Keep setup hidden by default
+                pinEntrySection.style.display = 'block';
+                vaultContainer.style.display = 'none'; // Ensure vault is hidden
+                vaultContainer.classList.remove('visible'); // Remove visible class if present
+                setupPinInputListeners();
+                // Focus after transition starts
+                setTimeout(() => pinInputs[0]?.focus(), 50);
+            }
+
+             function showLoginScreenWithError(message) {
+                showLoginScreen();
+                pinErrorMessage.textContent = message;
+            }
+
+            function hideLoginScreen() {
+                 loginScreen.classList.remove('visible');
+                 // Vault container display/visibility is handled after successful login
+            }
+
+            // PIN Setup Form Listener (Informational Only)
+            pinSetupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                setupErrorMessage.textContent = "PIN setup must be done on the server using 'setup_pin.php' and then deleted.";
+            });
+
+
+            function setupPinInputListeners() {
+                // Re-select inputs in case they were dynamically added or replaced
+                pinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit'));
+
+                pinInputs.forEach((input, index) => {
+                    // Clear previous listeners by cloning (simple way)
+                    const newInput = input.cloneNode(true);
+                    input.parentNode.replaceChild(newInput, input);
+
+                    // Add new listeners to the cloned element
+                    newInput.addEventListener('input', () => handlePinInput(newInput, index, pinInputs)); // Pass original array reference
+                    newInput.addEventListener('keydown', (e) => handlePinKeydown(e, index, pinInputs)); // Pass original array reference
+                    newInput.addEventListener('focus', () => newInput.select());
+                });
+                // Update the pinInputs array with the new nodes
+                pinInputs = Array.from(pinContainer.querySelectorAll('.pin-digit'));
+            }
+
+
+            function handlePinInput(input, index, currentPinInputs) {
+                const value = input.value;
+                pinErrorMessage.textContent = ''; // Clear error on input
+
+                // Auto-focus next input
+                if (value.length === 1 && /^\d$/.test(value) && index < currentPinInputs.length - 1) {
+                    currentPinInputs[index + 1].focus();
+                }
+
+                // Auto-submit when all filled
+                if (currentPinInputs.every(inp => inp.value.length === 1 && /^\d$/.test(inp.value))) {
+                    submitPinForLogin(currentPinInputs);
+                }
+            }
+
+            function handlePinKeydown(e, index, currentPinInputs) {
+                // Move focus backward on backspace if current input is empty
+                if (e.key === 'Backspace' && index > 0 && currentPinInputs[index].value === '') {
+                    currentPinInputs[index - 1].focus();
+                }
+                // Allow only digits, Backspace, Tab, Arrow keys, and Cmd/Ctrl shortcuts
+                if (!/^\d$/.test(e.key) &&
+                    e.key !== 'Backspace' && e.key !== 'Tab' && !e.metaKey && !e.ctrlKey &&
+                    e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Delete' &&
+                    e.key !== 'Home' && e.key !== 'End')
+                {
+                    e.preventDefault();
+                }
+            }
+
+            function getEnteredPin(currentPinInputs) {
+                return currentPinInputs.map(input => input.value).join('');
+            }
+
+            async function submitPinForLogin(currentPinInputs) {
+                const enteredPin = getEnteredPin(currentPinInputs);
+                if (enteredPin.length !== 4) return;
+
+                pinErrorMessage.textContent = 'Checking PIN...'; // Provide feedback
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/login.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ pin: enteredPin })
+                    });
+
+                    if (response.ok) {
+                        hideLoginScreen();
+                        // Delay showing vault slightly for transition
+                        setTimeout(() => {
+                            vaultContainer.style.display = 'block';
+                             requestAnimationFrame(() => { // Ensure display:block is rendered
+                                vaultContainer.classList.add('visible');
+                            });
+                            initializeVault();
+                        }, 300); // Match hide transition duration
+                    } else {
+                        const data = await response.json().catch(() => ({}));
+                        handleIncorrectPin(data.error || `Login failed (Status: ${response.status})`, currentPinInputs);
+                    }
+                } catch (error) {
+                    console.error('Login network error:', error);
+                    handleIncorrectPin('Network error during login.', currentPinInputs);
+                }
+            }
+
+            function handleIncorrectPin(message = 'Incorrect PIN. Please try again.', currentPinInputs) {
+                pinErrorMessage.textContent = message;
+                pinContainer.classList.add('shake');
+                currentPinInputs.forEach(input => input.value = '');
+                currentPinInputs[0].focus();
+
+                // Remove shake class after animation ends
+                setTimeout(() => {
+                    pinContainer.classList.remove('shake');
+                }, 500);
+            }
+
+            // --- Vault Logic (Initialized AFTER successful login) ---
+            function initializeVault() {
+                if (vaultContainer.dataset.initialized) return;
+                vaultContainer.dataset.initialized = 'true';
+
+                togglePasswordButton.addEventListener('click', handleTogglePasswordVisibility);
+                passwordForm.addEventListener('submit', handleAddPassword);
+                searchInput.addEventListener('input', handleSearch);
+                passwordList.addEventListener('click', handleListActions);
+                exportButton.addEventListener('click', handleExport);
+
+                fetchAndRenderPasswords();
+            }
+
+            // --- Vault Event Handlers ---
+            function handleTogglePasswordVisibility() {
+                const icon = togglePasswordButton.querySelector('i');
+                if (!icon) return;
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                icon.classList.toggle('fa-eye', !isPassword);
+                icon.classList.toggle('fa-eye-slash', isPassword);
+                togglePasswordButton.title = isPassword ? "Hide Password" : "Show Password";
+            }
+
+            async function handleAddPassword(e) {
+                e.preventDefault();
+                const website = websiteInput.value.trim();
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                if (!website || !username || !password) {
+                    alert('Please fill in all fields.');
+                    return;
+                }
+
+                // Add visual feedback for saving (optional)
+                const submitButton = passwordForm.querySelector('button[type="submit"]');
+                const submitButtonText = submitButton.querySelector('.text');
+                const originalButtonHTML = submitButtonText.innerHTML;
+                submitButton.disabled = true;
+                submitButtonText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/passwords.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ website, username, password })
+                    });
+
+                    if (response.ok) {
+                        passwordForm.reset();
+                        resetPasswordVisibilityToggle();
+                        fetchAndRenderPasswords(searchInput.value); // Re-fetch and render
+                    } else {
+                         const data = await response.json().catch(() => ({}));
+                         alert(`Error adding entry: ${data.error || response.statusText}`);
+                         if (response.status === 401) {
+                             showLoginScreenWithError("Session expired. Please log in again.");
+                         }
+                    }
+                } catch (error) {
+                    console.error('Error adding password:', error);
+                    alert('Network error while adding entry.');
+                } finally {
+                    // Restore button state
+                    submitButton.disabled = false;
+                    submitButtonText.innerHTML = originalButtonHTML;
+                }
+            }
+
+            let allPasswordsCache = [];
+            function handleSearch(e) {
+                renderPasswordsFromCache(e.target.value);
+            }
+
+            function handleListActions(e) {
+                const target = e.target;
+
+                // Handle password reveal/hide
+                const passwordValueSpan = target.closest('.password-value');
+                if (passwordValueSpan) {
+                    const listItem = passwordValueSpan.closest('li[data-id]');
+                    if (!listItem) return;
+                    const entryId = listItem.dataset.id;
+                    const entry = allPasswordsCache.find(p => p.id == entryId);
+                    if (entry) {
+                        togglePasswordDisplay(passwordValueSpan, entry.password);
+                    }
+                    return; // Prevent other actions if clicking the password span
+                }
+
+                // Handle button clicks (Copy/Delete)
+                const actionButton = target.closest('.button-57');
+                if (actionButton) {
+                    const listItem = actionButton.closest('li[data-id]');
+                    if (!listItem) return;
+                    const entryId = listItem.dataset.id;
+                    const entry = allPasswordsCache.find(p => p.id == entryId);
+                    if (!entry) return;
+
+                    if (actionButton.classList.contains('btn-copy')) {
+                        copyPassword(actionButton, entry.password);
+                    } else if (actionButton.classList.contains('btn-delete')) {
+                        if (confirm(`Are you sure you want to delete the entry for "${entry.website}"? This cannot be undone.`)) {
+                            deletePasswordEntry(entryId);
+                        }
+                    }
+                }
+            }
+
+
+            async function handleExport() {
+                 exportButton.disabled = true; // Disable while processing
+                 const exportButtonText = exportButton.querySelector('.text');
+                 const originalExportHTML = exportButtonText.innerHTML;
+                 exportButtonText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+
+                try {
+                    const passwordsToExport = await fetchPasswords();
+
+                    if (passwordsToExport.length === 0) {
+                        alert("There are no entries to export.");
+                        return; // Re-enable button in finally block
+                    }
+
+                    // Confirmation dialog
+                    const proceed = confirm("⚠️ WARNING ⚠️\n\nYou are about to export your stored entries.\n\nThe downloaded file will contain your passwords in PLAIN TEXT and is NOT encrypted.\n\nPlease store this file securely and delete it when no longer needed.\n\nDo you want to proceed?");
+
+                    if (!proceed) {
+                        return; // Re-enable button in finally block
+                    }
+
+
+                    const jsonData = JSON.stringify(passwordsToExport, null, 2);
+                    const blob = new Blob([jsonData], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const dateString = new Date().toISOString().split('T')[0];
+                    a.download = `password_vault_export_${dateString}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                } catch (error) {
+                     console.error("Error during export:", error);
+                     alert(`An error occurred while trying to fetch data for export: ${error.message || 'Unknown error'}`);
+                     if (error.message.includes("Session expired")) {
+                         showLoginScreenWithError("Session expired. Please log in again to export.");
+                     }
+                } finally {
+                    // Re-enable button and restore text, only if there are entries
+                     exportButtonText.innerHTML = originalExportHTML;
+                     exportButton.disabled = allPasswordsCache.length === 0;
+                }
+            }
+
+
+            // --- Vault Core Functions ---
+
+            async function fetchPasswords() {
+                // Show loading state in the list
+                passwordList.innerHTML = `<li class="no-entries">Loading entries...</li>`;
+                exportButton.disabled = true; // Disable export while loading
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/passwords.php`, {credentials: 'include'});
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data;
+                    } else {
+                         if (response.status === 401) {
+                             throw new Error("Session expired. Please log in again.");
+                         }
+                         const errorData = await response.json().catch(() => ({}));
+                         console.error("Error fetching passwords:", response.status, errorData.error);
+                         // Display error in the list area
+                         passwordList.innerHTML = `<li class="no-entries">Error fetching entries: ${escapeHtml(errorData.error || response.statusText)}</li>`;
+                         return []; // Return empty on error
+                    }
+                } catch (error) {
+                    // Re-throw session errors, handle others
+                    if (error.message.includes("Session expired")) {
+                        throw error;
+                    }
+                    console.error('Network error fetching passwords:', error);
+                     passwordList.innerHTML = `<li class="no-entries">Network error fetching entries.</li>`;
+                    return []; // Return empty on network error
+                }
+            }
+
+            async function fetchAndRenderPasswords(filter = '') {
+                try {
+                    allPasswordsCache = await fetchPasswords();
+                    renderPasswordsFromCache(filter); // Render based on fetched data
+                } catch (error) {
+                     if (error.message.includes("Session expired")) {
+                         showLoginScreenWithError(error.message);
+                         // Clear the list or show an appropriate message
+                         passwordList.innerHTML = `<li class="no-entries">Session expired. Please log in.</li>`;
+                         exportButton.disabled = true;
+                         allPasswordsCache = [];
+                     } else {
+                         // Other fetch errors are handled within fetchPasswords by updating the list
+                         exportButton.disabled = true; // Ensure export is disabled on error
+                     }
+                }
+            }
+
+            function renderPasswordsFromCache(filter = '') {
+                const lowerCaseFilter = filter.toLowerCase().trim();
+
+                const filteredPasswords = allPasswordsCache.filter(p =>
+                    (p.website && p.website.toLowerCase().includes(lowerCaseFilter)) ||
+                    (p.username && p.username.toLowerCase().includes(lowerCaseFilter))
+                );
+
+                // Enable/disable export button based on *total* entries, not filtered
+                exportButton.disabled = allPasswordsCache.length === 0;
+
+                // Clear list only if we have results or know the state
+                passwordList.innerHTML = '';
+
+                if (allPasswordsCache.length === 0 && passwordList.querySelector('.no-entries')) {
+                     // If fetchPasswords already set an error/empty message, don't overwrite it yet
+                     // unless the filter changes the state
+                     if (!passwordList.innerHTML.includes("Error") && !passwordList.innerHTML.includes("Network")) {
+                         passwordList.innerHTML = `<li class="no-entries">Your vault is empty. Add an entry!</li>`;
+                     }
+                } else if (filteredPasswords.length === 0) {
+                    passwordList.innerHTML = `<li class="no-entries">No entries match your search "${escapeHtml(filter)}".</li>`;
+                } else {
+                    filteredPasswords.sort((a, b) => (a.website || '').localeCompare(b.website || ''));
+
+                    filteredPasswords.forEach(entry => {
+                        const listItem = document.createElement('li');
+                        listItem.dataset.id = entry.id;
+                        // Use the create function with escaped data
+                        listItem.innerHTML = createPasswordListItemHTML({
+                             ...entry, // Spread existing properties
+                             website: escapeHtml(entry.website), // Escape potentially unsafe data
+                             username: escapeHtml(entry.username) // Escape potentially unsafe data
+                             // Password is not directly rendered here, handled by toggle
+                        });
+                        passwordList.appendChild(listItem);
+                    });
+                }
+            }
+
+            // Updated HTML structure generation
+            function createPasswordListItemHTML(entry) {
+                const escapedWebsite = entry.website || 'N/A';
+                const escapedUsername = entry.username || 'N/A';
+
+                return `
+                    <div class="password-entry-details">
+                        <strong>${escapedWebsite}</strong>
+                        <div class="detail-item">
+                            <span class="label"><i class="fas fa-user"></i> User:</span>
+                            <span class="username-value">${escapedUsername}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label"><i class="fas fa-key"></i> Pass:</span>
+                            <span class="password-value-container">
+                                <span class="password-value" title="Click to reveal / hide password">${MASKED_PASSWORD_CHAR}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="password-entry-actions">
+                        <button class="button-57 button-57-secondary btn-copy" role="button" title="Copy Password to Clipboard">
+                            <span class="text"><i class="fas fa-copy"></i> Copy</span>
+                            <span>Copy Pass</span>
+                        </button>
+                        <button class="button-57 button-57-danger btn-delete" role="button" title="Delete this Entry">
+                            <span class="text"><i class="fas fa-trash-alt"></i> Delete</span>
+                            <span>Remove</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+
+            function togglePasswordDisplay(element, actualPassword) {
+                if (element.textContent === MASKED_PASSWORD_CHAR) {
+                    element.textContent = escapeHtml(actualPassword); // Escape just before display
+                    element.classList.add('visible');
+                } else {
+                    element.textContent = MASKED_PASSWORD_CHAR;
+                    element.classList.remove('visible');
+                }
+            }
+
+            async function copyPassword(buttonElement, password) {
+                 const textSpan = buttonElement.querySelector('.text');
+                 if (!textSpan || buttonElement.disabled || buttonElement.classList.contains('copied')) return; // Prevent multiple clicks
+
+                 const originalTextHTML = textSpan.innerHTML;
+
+                 buttonElement.disabled = true; // Disable temporarily
+                 buttonElement.classList.add('copied'); // Add class for styling
+                 textSpan.innerHTML = '<i class="fas fa-check"></i> Copied!';
+
+                 try {
+                     await navigator.clipboard.writeText(password);
+                     // Keep the copied state for a short duration
+                     setTimeout(() => {
+                         // Check element still exists and hasn't been re-rendered
+                         const currentButton = document.querySelector(`li[data-id="${buttonElement.closest('li[data-id]').dataset.id}"] .btn-copy`);
+                         if (currentButton && currentButton.classList.contains('copied')) {
+                              const currentTextSpan = currentButton.querySelector('.text');
+                              currentTextSpan.innerHTML = originalTextHTML;
+                              currentButton.classList.remove('copied');
+                              currentButton.disabled = false;
+                         }
+                     }, 1800); // Duration of copied state
+                 } catch (err) {
+                     console.error('Failed to copy password: ', err);
+                     alert('Failed to copy password.');
+                      // Restore immediately on error
+                      textSpan.innerHTML = originalTextHTML;
+                      buttonElement.classList.remove('copied');
+                      buttonElement.disabled = false;
+                 }
+            }
+
+            async function deletePasswordEntry(id) {
+                // Find the list item to potentially animate or remove
+                const listItem = passwordList.querySelector(`li[data-id="${id}"]`);
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/passwords.php?id=${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        // Optional: Add a fade-out animation before removing
+                        if (listItem) {
+                            listItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                            listItem.style.opacity = '0';
+                            listItem.style.transform = 'translateX(-20px)';
+                            setTimeout(() => {
+                                // Remove from cache and re-render *after* animation
+                                allPasswordsCache = allPasswordsCache.filter(entry => entry.id != id);
+                                renderPasswordsFromCache(searchInput.value); // Re-render the list
+                            }, 300); // Match animation duration
+                        } else {
+                             // If item not found (shouldn't happen), just update cache and render
+                             allPasswordsCache = allPasswordsCache.filter(entry => entry.id != id);
+                             renderPasswordsFromCache(searchInput.value);
+                        }
+                    } else {
+                         const data = await response.json().catch(() => ({}));
+                         alert(`Error deleting entry: ${data.error || response.statusText}`);
+                          if (response.status === 401) {
+                             showLoginScreenWithError("Session expired. Please log in again.");
+                         }
+                    }
+                } catch (error) {
+                    console.error('Error deleting password:', error);
+                    alert('Network error while deleting entry.');
+                }
+            }
+
+            // --- Utility Functions ---
+            function resetPasswordVisibilityToggle() {
+                passwordInput.type = 'password';
+                const icon = togglePasswordButton.querySelector('i');
+                 if (icon) {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                    togglePasswordButton.title = "Show Password";
+                 }
+            }
+
+            function escapeHtml(unsafe) {
+                if (typeof unsafe !== 'string') {
+                    return unsafe; // Return non-strings as is
+                }
+                return unsafe
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
+             }
+
+        });
+
+        // --- End Embedded JavaScript ---
+    </script>
+
+</body>
+</html>
