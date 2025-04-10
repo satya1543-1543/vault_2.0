@@ -439,7 +439,7 @@
                             vaultContainer.style.display = 'block';
                              requestAnimationFrame(() => { vaultContainer.classList.add('visible'); });
                             initializeVault();
-                        }, 300);
+                        }, 0);
                     } else {
                         const data = await response.json().catch(() => ({}));
                         handleIncorrectPin(data.error || `Login failed (Status: ${response.status})`, currentPinInputs);
